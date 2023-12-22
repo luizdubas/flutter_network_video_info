@@ -12,7 +12,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   getExternalStoragePermission() async {
-    await PermissionHandler().requestPermissions([PermissionGroup.storage]);
+    await Permission.storage.request();
   }
 
   final videoInfo = FlutterVideoInfo();
@@ -26,25 +26,26 @@ class _MyAppState extends State<MyApp> {
   }
 
   String info = "";
-  String videoFilePath = "";
+  String videoFilePath =
+      "https://stream.mux.com/JQDMW6i01mEvQ4L7BGKHns00WVv01MhYU3Ww01UBSduMKnE.m3u8";
 
   getVideoInfo() async {
     /// here file path of video required
-    if (Platform.isIOS) {
-      videoFilePath =
-          "/Users/User/Library/Developer/CoreSimulator/Devices/6A0D4244-1DEB-49C3-9837-C08E19DAED31/data/Media/DCIM/100APPLE/IMG_0011.mp4";
-    } else if (Platform.isAndroid) {
-      videoFilePath = "storage/emulated/0/Geocam/Videos/4.mp4";
-    }
+    // if (Platform.isIOS) {
+    //   videoFilePath =
+    //       "/Users/User/Library/Developer/CoreSimulator/Devices/6A0D4244-1DEB-49C3-9837-C08E19DAED31/data/Media/DCIM/100APPLE/IMG_0011.mp4";
+    // } else if (Platform.isAndroid) {
+    //   videoFilePath = "storage/emulated/0/Geocam/Videos/4.mp4";
+    // }
     var a = await videoInfo.getVideoInfo(videoFilePath);
     setState(() {
       info =
-          "title=> ${a.title}\npath=> ${a.path}\nauthor=> ${a.author}\nmimetype=> ${a.mimetype}";
+          "title=> ${a?.title}\npath=> ${a?.path}\nauthor=> ${a?.author}\nmimetype=> ${a?.mimetype}";
       info +=
-          "\nheight=> ${a.height}\nwidth=> ${a.width}\nfileSize=> ${a.filesize} Bytes\nduration=> ${a.duration} milisec";
+          "\nheight=> ${a?.height}\nwidth=> ${a?.width}\nfileSize=> ${a?.filesize} Bytes\nduration=> ${a?.duration} milisec";
       info +=
-          "\norientation=> ${a.orientation}\ndate=> ${a.date}\nframerate=> ${a.framerate}";
-      info += "\nlocation=> ${a.location}";
+          "\norientation=> ${a?.orientation}\ndate=> ${a?.date}\nframerate=> ${a?.framerate}";
+      info += "\nlocation=> ${a?.location}";
     });
   }
 

@@ -28,10 +28,8 @@ public class SwiftFlutterVideoInfoPlugin: NSObject, FlutterPlugin {
   }
 
   private func getVidInfo(path: String, result: FlutterResult) {
-    let url = URL(fileURLWithPath: path)
+    let url = URL(string: path)!
     let asset = AVURLAsset(url: url)
-    let fileManager = FileManager.default
-    let isFileExist = fileManager.fileExists(atPath: path)
 
     let creationDate = asset.creationDate?.dateValue
 
@@ -49,15 +47,6 @@ public class SwiftFlutterVideoInfoPlugin: NSObject, FlutterPlugin {
 
     var fileSize: UInt64 = 0
 
-    do {
-      let attr = try FileManager.default.attributesOfItem(atPath: path)
-      fileSize = attr[FileAttributeKey.size] as! UInt64
-      let dict = attr as NSDictionary
-      fileSize = dict.fileSize()
-    } catch {
-      print("Error: \(error)")
-    }
-
     var jsonObj = [String: Any]()
     jsonObj["path"] = path
     jsonObj["mimetype"] = mimetype
@@ -74,7 +63,7 @@ public class SwiftFlutterVideoInfoPlugin: NSObject, FlutterPlugin {
     jsonObj["duration"] = durationTime
     jsonObj["filesize"] = fileSize
     jsonObj["orientation"] = orientation
-    jsonObj["isfileexist"] = isFileExist
+    jsonObj["isfileexist"] = true
 
     do {
       let jsonData = try JSONSerialization.data(withJSONObject: jsonObj)
@@ -86,10 +75,10 @@ public class SwiftFlutterVideoInfoPlugin: NSObject, FlutterPlugin {
   }
 
   private func mimeTypeForPath(path: String) -> String {
-    let url = NSURL(fileURLWithPath: path)
+    let url = URL(string: path)!
     let pathExtension = url.pathExtension
 
-    if let uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, pathExtension! as NSString, nil)?.takeRetainedValue() {
+    if let uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, pathExtension as NSString, nil)?.takeRetainedValue() {
       if let mimetype = UTTypeCopyPreferredTagWithClass(uti, kUTTagClassMIMEType)?.takeRetainedValue() {
         return mimetype as String
       }

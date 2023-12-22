@@ -12,7 +12,11 @@ import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.HashMap;
+import java.util.Map;
 import java.io.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.MethodCall;
@@ -27,19 +31,24 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 public class FlutterVideoInfoPlugin implements FlutterPlugin, MethodCallHandler {
 
     private String chName = "flutter_video_info";
-    public static Context context;
+    private Context context;
+    private ExecutorService executor;
+    private MethodChannel channel;
 
     @Override
-    public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
-        final MethodChannel channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(),
-                "flutter_video_info");
-        channel.setMethodCallHandler(new FlutterVideoInfoPlugin());
-        context = flutterPluginBinding.getApplicationContext();
+    public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+        context = binding.getApplicationContext();
+        executor = Executors.newCachedThreadPool();
+        channel = new MethodChannel(binding.getBinaryMessenger(), "flutter_video_info");
+        channel.setMethodCallHandler(this);
     }
 
-    public static void registerWith(Registrar registrar_) {
-        final MethodChannel channel = new MethodChannel(registrar_.messenger(), "flutter_video_info");
-        channel.setMethodCallHandler(new FlutterVideoInfoPlugin());
+    @Override
+    public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+        channel.setMethodCallHandler(null);
+        channel = null;
+        executor.shutdown();
+        executor = null;
     }
 
     @Override
@@ -52,27 +61,16 @@ public class FlutterVideoInfoPlugin implements FlutterPlugin, MethodCallHandler 
         }
     }
 
-    @Override
-    public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
-    }
-
     String getVidInfo(String path) {
-        File file = new File(path);
-        boolean isFileExists=file.exists();
         String author,dateString,mimeType,location,frameRateStr,widthStr,heightStr,durationStr,orientation;
         double filesize;
-        if(isFileExists){
-            MediaMetadataRetriever mediaRetriever = new MediaMetadataRetriever();
-            try {
-                mediaRetriever.setDataSource(context, Uri.fromFile(file));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            
-
+        MediaMetadataRetriever mediaRetriever = new MediaMetadataRetriever();
+        JSONObject json = new JSONObject();
+        try {
+            mediaRetriever.setDataSource(path, new HashMap<>());
             author = getData(MediaMetadataRetriever.METADATA_KEY_AUTHOR, mediaRetriever);
             dateString = getData(MediaMetadataRetriever.METADATA_KEY_DATE, mediaRetriever);
-            try {
+             try {
                 SimpleDateFormat readFormat = new SimpleDateFormat("yyyyMMdd'T'HHmmss.SSS", Locale.getDefault());
                 Date date = readFormat.parse(dateString);
                 SimpleDateFormat outFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
@@ -87,46 +85,34 @@ public class FlutterVideoInfoPlugin implements FlutterPlugin, MethodCallHandler 
             durationStr = getData(MediaMetadataRetriever.METADATA_KEY_DURATION, mediaRetriever);
             widthStr = getData(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH, mediaRetriever);
             heightStr = getData(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT, mediaRetriever);
-            filesize = file.length();
+            filesize = 0;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
                 orientation = getData(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION, mediaRetriever);
             } else {
                 orientation = null;
             }
-            
+
             try {
                  mediaRetriever.release();
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            
-        }else{
-            author="";
-            dateString="";
-            mimeType="";
-            location="";
-            frameRateStr="";
-            widthStr="";
-            heightStr="";
-            durationStr="";
-            orientation="";
-            filesize=0;
-        }
-
-        JSONObject json = new JSONObject();
-        try {
-            json.put("path", path);
-            json.put("mimetype", mimeType);
-            json.put("author", author);
-            json.put("date", dateString);
-            json.put("width", widthStr);
-            json.put("height", heightStr);
-            json.put("location", location);
-            json.put("framerate", frameRateStr);
-            json.put("duration", durationStr);
-            json.put("filesize", filesize);
-            json.put("orientation", orientation);
-            json.put("isfileexist",isFileExists);
+            try {
+                json.put("path", path);
+                json.put("mimetype", mimeType);
+                json.put("author", author);
+                json.put("date", dateString);
+                json.put("width", widthStr);
+                json.put("height", heightStr);
+                json.put("location", location);
+                json.put("framerate", frameRateStr);
+                json.put("duration", durationStr);
+                json.put("filesize", filesize);
+                json.put("orientation", orientation);
+                json.put("isfileexist",true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
